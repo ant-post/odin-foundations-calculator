@@ -9,7 +9,10 @@
 </head>
 <body>
     <div class="calculator-container">
-        <div id="calculator-screen" class="calculator-screen"></div>
+        <div id="calculator-screen">
+            <div id="calculator-screen-history"></div>
+            <div id="calculator-screen-current"></div>
+        </div>
 
         <button data-action="clear" class="calculator-button">AC</button>
         <button data-action="delete" class="calculator-button">Del</button>
@@ -31,9 +34,12 @@
         <button data-number="3" class="calculator-button">3</button>
         <button data-operation="*" class="calculator-button">*</button>
 
-        <button data-number="0" class="calculator-button calculator-wide-button">0</button>
-        <button data-action="result" class="calculator-button calculator-wide-button">=</button>
+        <button data-number="0" class="calculator-button">0</button>
+        <button data-action="result" class="calculator-button">=</button>
+        <button data-number="." class="calculator-button">.</button>
         <button data-operation="/" class="calculator-button">/</button>
     </div>
+    
+    <audio id="button-click-sound-one" src="./sounds/button-press-sound-1.mp3"></audio>
 </body>
 </html>
