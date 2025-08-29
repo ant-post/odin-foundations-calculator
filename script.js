@@ -13,6 +13,9 @@ function multiply(a, b) {
 }
 
 function divide(a, b) {
+    if (b === 0) {
+        throw new Error('Division by zero');
+    }
     return a / b;
 }
 
@@ -20,7 +23,11 @@ function power(a, b) {
     if (b < 0) {
         throw new Error('Invalid degree value');
     }
-    else if (b === 0) {
+    if (!Number.isInteger(b)) {
+        throw new Error('Exponent must be an integer');
+    }
+    
+    if (b === 0) {
         return 1;
     }
     else {
@@ -37,6 +44,9 @@ function modulo(a, b) {
 }
 
 function operate(a, b, operationSign) {
+    a = parseFloat(a);
+    b = parseFloat(b);
+    
     switch (operationSign) {
         case '+':
             return add(a, b);
@@ -68,24 +78,30 @@ function deleteLastSymbolScreenCurrent() {
     screenCurrent.textContent = screenCurrent.textContent.slice(0, -1);
 }
 
+function formatNumber(str) {
+    const num = parseFloat(str);
+    // return num % 1 === 0 ? str : num.toFixed(2);
+    return num % 1 === 0 ? str : (Math.round(num * 100) / 100).toString()
+}
+
 const screenHistory = document.getElementById('calculator-screen-history');
 function displayScreenHistoryContent(numberOne, numberTwo, operationSymbol, isResult) {
     if (numberOne != null) {
         if (operationSymbol != null) {
             if (numberTwo != null) {
                 if (isResult) {
-                     screenHistory.textContent = `${numberOne} ${operationSign} ${numberTwo} = ${lastResult}`;
+                     screenHistory.textContent = `${formatNumber(numberOne)} ${operationSign} ${formatNumber(numberTwo)} = ${formatNumber(lastResult)}`;
                 }
                 else {
-                    screenHistory.textContent = `${numberOne} ${operationSign} ${numberTwo}`;
+                    screenHistory.textContent = `${formatNumber(numberOne)} ${operationSign} ${formatNumber(numberTwo)}`;
                 }
             }
             else {
-                screenHistory.textContent = `${numberOne} ${operationSign}`;
+                screenHistory.textContent = `${formatNumber(numberOne)} ${operationSign}`;
             }
         } 
         else {
-            screenHistory.textContent = numberOne;
+            screenHistory.textContent = formatNumber(numberOne);
         }
     }
     else {
@@ -93,30 +109,46 @@ function displayScreenHistoryContent(numberOne, numberTwo, operationSymbol, isRe
     }
 }
 
+const dotButton = document.querySelector(`[data-number="."]`);
 function processNumberInput(numberSymbol) {
+    if (numberSymbol === '.') {
+        dotButton.disabled = true;
+    }
+
     if (numberOne != null) {
         if (operationSign != null) {
             if (numberTwo != null) {
-                numberTwo = parseFloat(numberTwo + numberSymbol);    
+                numberTwo = numberTwo + numberSymbol;    
             }
             else {
-                numberTwo = parseFloat(numberSymbol);
+                if (numberSymbol === '.') {
+                    numberTwo = '0.0';
+                }
+                else {
+                    numberTwo = numberSymbol;
+                }
             }
             replaceScreenCurrentContent(numberTwo);
         }
         else {
-            numberOne = parseFloat(numberOne + numberSymbol);
+            numberOne = numberOne + numberSymbol;
             replaceScreenCurrentContent(numberOne);
         }
     }
     else {
-        numberOne = parseFloat(numberSymbol);  
+        if (numberSymbol === '.') {
+            numberOne = '0.0';
+        }
+        else {
+            numberOne = numberSymbol;
+        }
         replaceScreenCurrentContent(numberOne);
     } 
     displayScreenHistoryContent(numberOne, numberTwo, operationSign, false);
 }
 
 function processOperationInput(operationSymbol) {
+    dotButton.disabled = false;
     if (operationSign == null) {
         if (numberOne == null) {
             if (lastResult != null) {
@@ -140,19 +172,26 @@ function processOperationInput(operationSymbol) {
 
 function processResultInput() {
     if (numberOne != null && numberTwo != null && operationSign != null) {
-        lastResult = operate(numberOne, numberTwo, operationSign);
-        displayScreenHistoryContent(numberOne, numberTwo, operationSign, true);
-        replaceScreenCurrentContent(lastResult);
-        numberOne = null;
-        numberTwo = null;
-        operationSign = null;
+        dotButton.disabled = false;
+        try {
+            lastResult = operate(numberOne, numberTwo, operationSign).toString();
+            displayScreenHistoryContent(numberOne, numberTwo, operationSign, true);
+            replaceScreenCurrentContent(lastResult);
+        } catch (error) {
+            replaceScreenCurrentContent('Error: ' + error.message);
+            displayScreenHistoryContent(null, null, null, false);
+        } finally {
+            numberOne = null;
+            numberTwo = null;
+            operationSign = null;
+        }
     }
 }
 
 function processDeleteInput() {
     if (numberTwo != null) {
         const sliced = numberTwo.toString().slice(0, -1);
-        numberTwo = sliced !== '' ? parseFloat(sliced) : null;
+        numberTwo = sliced !== '' ? sliced : null;
         deleteLastSymbolScreenCurrent();
     }
     else if (numberOne != null) { 
@@ -164,7 +203,7 @@ function processDeleteInput() {
         }
         
         const sliced = numberOne.toString().slice(0, -1);
-        numberOne = sliced !== '' ? parseFloat(sliced) : null;
+        numberOne = sliced !== '' ? sliced : null;
         deleteLastSymbolScreenCurrent();
     }
     displayScreenHistoryContent(numberOne, numberTwo, operationSign, false);
@@ -174,6 +213,8 @@ function processClearInput() {
     numberOne = null;
     numberTwo = null;
     operationSign = null;
+    lastResult = null;
+    dotButton.disabled = false;
     replaceScreenCurrentContent('');
     displayScreenHistoryContent(null, null, null, false);
 }
@@ -213,11 +254,12 @@ calculatorButtons.forEach(button => {
 document.addEventListener('keydown', (event) => {
     const key = event.key;
 
-    if (/^[0-9.]/.test(key)) {
-        const button = document.querySelector(`[data-number="${key}"]`);
+    if (/^[0-9.,]/.test(key)) {
+        const normalizedKey = key === ',' ? '.' : key;
+        const button = document.querySelector(`[data-number="${normalizedKey}"]`);
         button?.click();
     } 
-    else if (['+', '-', '*', '/', '^', '%', '.'].includes(key)) {
+    else if (['+', '-', '*', '/', '^', '%'].includes(key)) {  
         const button = document.querySelector(`[data-operation="${key}"]`);
         button?.click();
     }
